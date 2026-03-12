@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import React, { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useState } from 'react';
 import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { auth } from '../firebaseConfig';
 
@@ -10,20 +10,21 @@ export default function LoginScreen() {
   const router = useRouter();
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Missing Fields", "Please enter both email and password.");
+      return; // stops here, never reaches Firebase
+    }
+
+    if (!email.includes('@')) {
+      Alert.alert("Invalid Email", "Please enter a valid email address.");
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.replace('/home'); // Redirect to the swipe screen
     } catch (error: any) {
-      Alert.alert("Login Error", error.message);
-    }
-  };
-
-  const handleSignUp = async () => {
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert("Success", "Account created! You can now log in.");
-    } catch (error: any) {
-      Alert.alert("Sign Up Error", error.message);
+      Alert.alert("Login Error", "Invalid email or password, please try again.");
     }
   };
 
@@ -35,12 +36,14 @@ export default function LoginScreen() {
       
       <TextInput 
         placeholder="Email" 
+        placeholderTextColor="#9CA3AF"
         className="bg-gray-100 p-4 rounded-xl mb-4"
         autoCapitalize="none"
         onChangeText={setEmail}
       />
       <TextInput 
         placeholder="Password" 
+        placeholderTextColor="#9CA3AF"
         className="bg-gray-100 p-4 rounded-xl mb-6"
         secureTextEntry
         onChangeText={setPassword}
@@ -50,7 +53,8 @@ export default function LoginScreen() {
         <Text className="text-white text-center font-bold text-lg">Login</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity className="mt-6" onPress={handleSignUp}>
+      {/* navigate to signup page */}
+      <TouchableOpacity className="mt-6" onPress={() => router.push('/signup')}>
         <Text className="text-blue-500 text-center">Create an Account</Text>
       </TouchableOpacity>
     </View>
