@@ -85,7 +85,7 @@ export default function HomeScreen() {
 
   if (loading) return <View className="flex-1 justify-center"><ActivityIndicator size="large" color="#EF4444" /></View>;
 
-  const firstName = userData?.name.split(' ')[0] || 'Chef';
+  const firstName = (userData?.name || '').split(' ')[0] || 'Chef';
 
   return (
     <View className="flex-1 bg-rose-50 px-6 pt-16 items-center">
