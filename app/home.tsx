@@ -70,7 +70,7 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-rose-50 px-6 pt-16 items-center">
       <View className="self-start mb-8">
-        <Text className="text-2xl font-extrabold text-gray-800">Hey, {firstName}! 👋</Text>
+        <Text className="text-2xl font-extrabold text-gray-800">Hey, {firstName}!</Text>
         <Text className="text-sm text-gray-500 mt-1">What's going in the pot today?</Text>
       </View>
 
@@ -82,7 +82,7 @@ export default function HomeScreen() {
           />
         ) : (
           <View className="items-center">
-            <Text className="text-lg font-bold text-gray-700">All caught up! 🥗</Text>
+            <Text className="text-lg font-bold text-gray-700">All caught up!</Text>
             <TouchableOpacity 
               onPress={() => setCurrentIndex(0)} 
               className="mt-6 bg-rose-500 px-8 py-3 rounded-full"

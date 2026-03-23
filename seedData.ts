@@ -10,6 +10,9 @@ const ingredients = [
   { name: "Cheese", image: "🧀", category: "Dairy" },
 ];
 
+
+
+
 export const seedIngredients = async () => {
   const colRef = collection(db, "ingredients");
   
