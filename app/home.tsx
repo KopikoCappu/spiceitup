@@ -1,5 +1,5 @@
 import SwipeCard from '@/components/SwipeCard';
-import { arrayRemove, arrayUnion, collection, doc, getDocs, setDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../AuthContext';
@@ -13,11 +13,31 @@ interface Ingredient {
   image: string;
 }
 
+type UserData = {
+  name: string;
+  email: string;
+  allergies: string[];
+  profileComplete: boolean;
+}
+
 export default function HomeScreen() {
   const { user } = useAuth();
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUser = async () => {
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setUserData(docSnap.data() as UserData);
+      }
+    };
+    if (user) fetchUser();
+  }, [user]);
 
   // 1. Seed and Fetch Data
   useEffect(() => {
@@ -65,7 +85,7 @@ export default function HomeScreen() {
 
   if (loading) return <View className="flex-1 justify-center"><ActivityIndicator size="large" color="#EF4444" /></View>;
 
-  const firstName = user?.email?.split('@')[0] || 'Chef';
+  const firstName = userData?.name.split(' ')[0] || 'Chef';
 
   return (
     <View className="flex-1 bg-rose-50 px-6 pt-16 items-center">

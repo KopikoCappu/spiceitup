@@ -24,6 +24,7 @@
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png",
+      // TEST
       "bundler": "metro"
     },
     "plugins": [
