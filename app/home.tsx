@@ -23,9 +23,10 @@ type UserData = {
 export default function HomeScreen() {
   const { user } = useAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredientGroups, setIngredientGroups] = useState<Ingredient[][]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [groupIndex, setGroupIndex] = useState(0);
+  const [itemIndex, setItemIndex] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -48,16 +49,34 @@ export default function HomeScreen() {
         id: doc.id,
         ...doc.data()
       })) as Ingredient[];
-      setIngredients(items);
+
+      //shuffles the ingredients
+      const shuffled = [...items];
+      for (let i = 0; i < shuffled.length; i++) {
+        const randNum = Math.floor(Math.random() * shuffled.length);
+        const temp = shuffled[i];
+        shuffled[i] = shuffled[randNum];
+        shuffled[randNum] = temp;
+      }
+
+      //groups the ingredients
+      const groups: Ingredient[][] = [];
+      const groupSize = 15;
+
+      for (let i = 0; i < shuffled.length; i += groupSize) {
+        groups.push(shuffled.slice(i, i + groupSize));
+      }
+
+      setIngredientGroups(groups);
       setLoading(false);
     };
     setupData();
   }, []);
 
   const handleChoice = async (liked: boolean) => {
-    if (!user || !ingredients[currentIndex]) return;
+    if (!user || !ingredientGroups[groupIndex][itemIndex]) return;
 
-    const ingredient = ingredients[currentIndex];
+    const ingredient = ingredientGroups[groupIndex][itemIndex];
     const userPrefsRef = doc(db, "users", user.uid);
 
     try {
@@ -79,7 +98,7 @@ export default function HomeScreen() {
     }
 
     setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
+      setItemIndex(prev => prev + 1);
     }, 200);
   };
 
@@ -95,19 +114,35 @@ export default function HomeScreen() {
       </View>
 
       <View className="w-full h-3/5 items-center justify-center">
-        {currentIndex < ingredients.length ? (
+        {itemIndex < ingredientGroups[groupIndex].length ? (
           <SwipeCard 
-            ingredient={ingredients[currentIndex]} 
+            ingredient={ingredientGroups[groupIndex][itemIndex]} 
             onSwipe={(liked) => handleChoice(liked)} 
           />
-        ) : (
+        ) : groupIndex == (ingredientGroups.length-1) ? (
           <View className="items-center">
             <Text className="text-lg font-bold text-gray-700">All caught up! 🥗</Text>
             <TouchableOpacity 
-              onPress={() => setCurrentIndex(0)} 
+              onPress={() => {
+                setItemIndex(0);
+                setGroupIndex(0);
+              }} 
               className="mt-6 bg-rose-500 px-8 py-3 rounded-full"
             >
               <Text className="text-white font-bold">Restart Deck</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View className="items-center">
+            <Text className="text-lg font-bold text-gray-700">Done with the round! 🌶️</Text>
+            <TouchableOpacity 
+              onPress={() => {
+                setItemIndex(0);
+                setGroupIndex(prev => prev + 1);
+              }}
+              className="mt-6 bg-rose-500 px-8 py-3 rounded-full"
+            >
+              <Text className="text-white font-bold">Continue Search</Text>
             </TouchableOpacity>
           </View>
         )}
