@@ -27,6 +27,8 @@ export default function RootLayout() {
           <Stack.Screen name="signup" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="allergy" options={{ animation: 'none' }} />
           <Stack.Screen name="home" options={{ animation: 'none' }} />
+          <Stack.Screen name="recipes" options={{ animation: 'none' }} />
+          <Stack.Screen name="profile" options={{ animation: 'none' }} />
         </Stack>
       </GestureHandlerRootView>
       </SafeAreaProvider>
