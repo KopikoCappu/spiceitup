@@ -39,7 +39,8 @@ export default function SignupScreen() {
 
             await setDoc(doc(db, "users", uid), {
                 name : name,
-                email : email
+                email : email,
+                isAdmin : false
             } 
             )
             router.replace('/allergy');
