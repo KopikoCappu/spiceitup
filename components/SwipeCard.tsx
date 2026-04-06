@@ -44,7 +44,7 @@ export default function SwipeCard({ ingredient, onSwipe }: SwipeCardProps) {
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View style={[{ width: '100%' }, animatedStyle]}>
-        <View className="bg-white rounded-3xl p-8 items-center shadow-xl border border-rose-100">
+        <View className="bg-white rounded-3xl p-8 items-center shadow-xl border border-rose-100" style={{ aspectRatio: 4/5, justifyContent: 'center' }}>
           <Text className="text-8xl mb-4">{ingredient.image}</Text>
           <Text className="text-3xl font-bold text-gray-800">{ingredient.name}</Text>
         </View>

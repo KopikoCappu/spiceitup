@@ -1,4 +1,5 @@
 import SwipeCard from '@/components/SwipeCard';
+import TabBar from '@/components/TabBar';
 import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
@@ -50,6 +51,13 @@ export default function HomeScreen() {
         ...doc.data()
       })) as Ingredient[];
 
+      //deletes the previous liked today ingredients
+      if (user) {
+          await setDoc(doc(db, "users", user.uid), {
+          likedToday: []
+        }, { merge: true });
+      }
+
       //shuffles the ingredients
       const shuffled = [...items];
       for (let i = 0; i < shuffled.length; i++) {
@@ -83,14 +91,15 @@ export default function HomeScreen() {
       if (liked) {
         // Add to likes, remove from dislikes (if it was there)
         await setDoc(userPrefsRef, {
-          likedIngredients: arrayUnion(ingredient.id),
-          dislikedIngredients: arrayRemove(ingredient.id)
+          likedToday: arrayUnion(ingredient.id),
+          likedIngredients: arrayUnion(ingredient.name),
+          dislikedIngredients: arrayRemove(ingredient.name)
         }, { merge: true });
       } else {
         // Add to dislikes, remove from likes (if it was there)
         await setDoc(userPrefsRef, {
-          dislikedIngredients: arrayUnion(ingredient.id),
-          likedIngredients: arrayRemove(ingredient.id)
+          dislikedIngredients: arrayUnion(ingredient.name),
+          likedIngredients: arrayRemove(ingredient.name)
         }, { merge: true });
       }
     } catch (error) {
@@ -107,13 +116,14 @@ export default function HomeScreen() {
   const firstName = (userData?.name || '').split(' ')[0] || 'Chef';
 
   return (
-    <View className="flex-1 bg-rose-50 px-6 pt-16 items-center">
+    <View className="flex-1 bg-rose-50">
+      <View className="flex-1 px-6 pt-16 items-center">
       <View className="self-start mb-8">
         <Text className="text-2xl font-extrabold text-gray-800">Hey, {firstName}!</Text>
         <Text className="text-sm text-gray-500 mt-1">What's going in the pot today?</Text>
       </View>
 
-      <View className="w-full h-3/5 items-center justify-center">
+      <View className="w-4/5 items-center justify-center mt-20" style={{ alignSelf: 'center' }}>
         {itemIndex < ingredientGroups[groupIndex].length ? (
           <SwipeCard 
             ingredient={ingredientGroups[groupIndex][itemIndex]} 
@@ -164,6 +174,9 @@ export default function HomeScreen() {
           <Text className="text-teal-500 text-3xl font-bold">✔</Text>
         </TouchableOpacity>
       </View>
+      {/* navigation bar between screens */}
+      </View>
+      <TabBar /> 
     </View>
   );
 }
