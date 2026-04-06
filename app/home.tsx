@@ -51,6 +51,13 @@ export default function HomeScreen() {
         ...doc.data()
       })) as Ingredient[];
 
+      //deletes the previous liked today ingredients
+      if (user) {
+          await setDoc(doc(db, "users", user.uid), {
+          likedToday: []
+        }, { merge: true });
+      }
+
       //shuffles the ingredients
       const shuffled = [...items];
       for (let i = 0; i < shuffled.length; i++) {
@@ -84,6 +91,7 @@ export default function HomeScreen() {
       if (liked) {
         // Add to likes, remove from dislikes (if it was there)
         await setDoc(userPrefsRef, {
+          likedToday: arrayUnion(ingredient.id),
           likedIngredients: arrayUnion(ingredient.name),
           dislikedIngredients: arrayRemove(ingredient.name)
         }, { merge: true });
