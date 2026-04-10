@@ -1,5 +1,4 @@
 import SwipeCard from '@/components/SwipeCard';
-import TabBar from '@/components/TabBar';
 import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
@@ -43,6 +42,7 @@ export default function HomeScreen() {
 
   // 1. Seed and Fetch Data
   useEffect(() => {
+    if (!userData) return;
     const setupData = async () => {
       await seedIngredients(); 
       const querySnapshot = await getDocs(collection(db, "ingredients"));
@@ -51,15 +51,16 @@ export default function HomeScreen() {
         ...doc.data()
       })) as Ingredient[];
 
-      //deletes the previous liked today ingredients
+      // Deletes likedToday of the User
       if (user) {
-          await setDoc(doc(db, "users", user.uid), {
+        await setDoc(doc(db, "users", user.uid), {
           likedToday: []
         }, { merge: true });
       }
 
-      //shuffles the ingredients
+      // Shuffle the Ingredients
       const shuffled = [...items];
+
       for (let i = 0; i < shuffled.length; i++) {
         const randNum = Math.floor(Math.random() * shuffled.length);
         const temp = shuffled[i];
@@ -67,7 +68,15 @@ export default function HomeScreen() {
         shuffled[randNum] = temp;
       }
 
-      //groups the ingredients
+      // Filter out Allergens
+      for (let i = 0; i < shuffled.length; i++) {
+        if (userData?.allergies.includes(shuffled[i].id)) {
+          shuffled.splice(i, 1);
+          i--;
+        }
+      }
+
+      // Groups the Ingredients
       const groups: Ingredient[][] = [];
       const groupSize = 15;
 
@@ -79,7 +88,7 @@ export default function HomeScreen() {
       setLoading(false);
     };
     setupData();
-  }, []);
+  }, [userData?.allergies]);
 
   const handleChoice = async (liked: boolean) => {
     if (!user || !ingredientGroups[groupIndex][itemIndex]) return;
@@ -92,14 +101,14 @@ export default function HomeScreen() {
         // Add to likes, remove from dislikes (if it was there)
         await setDoc(userPrefsRef, {
           likedToday: arrayUnion(ingredient.id),
-          likedIngredients: arrayUnion(ingredient.name),
-          dislikedIngredients: arrayRemove(ingredient.name)
+          likedIngredients: arrayUnion(ingredient.id),
+          dislikedIngredients: arrayRemove(ingredient.id)
         }, { merge: true });
       } else {
         // Add to dislikes, remove from likes (if it was there)
         await setDoc(userPrefsRef, {
-          dislikedIngredients: arrayUnion(ingredient.name),
-          likedIngredients: arrayRemove(ingredient.name)
+          dislikedIngredients: arrayUnion(ingredient.id),
+          likedIngredients: arrayRemove(ingredient.id)
         }, { merge: true });
       }
     } catch (error) {
@@ -116,14 +125,13 @@ export default function HomeScreen() {
   const firstName = (userData?.name || '').split(' ')[0] || 'Chef';
 
   return (
-    <View className="flex-1 bg-rose-50">
-      <View className="flex-1 px-6 pt-16 items-center">
+    <View className="flex-1 bg-rose-50 px-6 pt-16 items-center">
       <View className="self-start mb-8">
         <Text className="text-2xl font-extrabold text-gray-800">Hey, {firstName}! 👋</Text>
         <Text className="text-sm text-gray-500 mt-1">What's going in the pot today?</Text>
       </View>
 
-      <View className="w-4/5 items-center justify-center mt-20" style={{ alignSelf: 'center' }}>
+      <View className="w-full h-3/5 items-center justify-center">
         {itemIndex < ingredientGroups[groupIndex].length ? (
           <SwipeCard 
             ingredient={ingredientGroups[groupIndex][itemIndex]} 
@@ -174,9 +182,6 @@ export default function HomeScreen() {
           <Text className="text-teal-500 text-3xl font-bold">✔</Text>
         </TouchableOpacity>
       </View>
-      {/* navigation bar between screens */}
-      </View>
-      <TabBar /> 
     </View>
   );
 }
