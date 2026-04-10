@@ -70,7 +70,7 @@ export default function HomeScreen() {
 
       // Filter out Allergens
       for (let i = 0; i < shuffled.length; i++) {
-        if (userData?.allergies.includes(shuffled[i].id)) {
+        if (userData?.allergies.includes(shuffled[i].name)) {
           shuffled.splice(i, 1);
           i--;
         }
