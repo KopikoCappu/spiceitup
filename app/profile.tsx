@@ -1,11 +1,13 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { addDoc, collection, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator, Alert,
-    KeyboardAvoidingView,
-    Platform, ScrollView, Text, TextInput, TouchableOpacity, View
+  ActivityIndicator, Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform, ScrollView, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useAuth } from '../AuthContext';
 import TabBar from '../components/TabBar';
@@ -27,6 +29,7 @@ type UserData = {
   email: string;
   allergies: string[];
   avatarColor?: string;
+  photoURL?: string;
   isAdmin?: boolean;
 }
 
@@ -42,6 +45,8 @@ export default function ProfileScreen() {
   const [name, setName] = useState('');
   const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
   const [allergies, setAllergies] = useState<string[]>([]);
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   // search/change allergies
   const [allIngredients, setAllIngredients] = useState<string[]>([]);
@@ -56,14 +61,14 @@ export default function ProfileScreen() {
 
   const router = useRouter();
 
-    const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
-        await signOut(auth);
-        router.replace('/');
+      await signOut(auth);
+      router.replace('/');
     } catch (e: any) {
-        Alert.alert("Logout Error", e.message);
+      Alert.alert("Logout Error", e.message);
     }
-    };
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -74,6 +79,7 @@ export default function ProfileScreen() {
         setUserData(data);
         setName(data.name);
         setAllergies(data.allergies || []);
+        setPhotoURL(data.photoURL || null);
         const saved = AVATAR_COLORS.find(c => c.hex === data.avatarColor);
         setAvatarColor(saved || AVATAR_COLORS[0]);
       }
@@ -91,6 +97,28 @@ export default function ProfileScreen() {
     };
     fetchIngredients();
   }, []);
+
+  // pick & upload photo
+const handlePickPhoto = async () => {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert("Permission Required", "Allow photo library access to set a profile picture.");
+    return;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.3, // keep it small for Firestore
+    base64: true, // <-- get base64 directly
+  });
+
+  if (result.canceled || !result.assets?.[0]?.base64) return;
+
+  const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+  setPhotoURL(base64);
+};
 
   const handleAllergySearch = (text: string) => {
     setNewAllergy(text);
@@ -123,8 +151,12 @@ export default function ProfileScreen() {
         name,
         allergies,
         avatarColor: avatarColor.hex,
+        photoURL: photoURL ?? null,
       });
-      setUserData(prev => prev ? { ...prev, name, allergies, avatarColor: avatarColor.hex } : null);
+      setUserData(prev => prev
+        ? { ...prev, name, allergies, avatarColor: avatarColor.hex, photoURL: photoURL ?? undefined }
+        : null
+      );
       setEditing(false);
     } catch (e: any) {
       Alert.alert("Save Error", e.message);
@@ -132,9 +164,9 @@ export default function ProfileScreen() {
   };
 
   const handleCancel = () => {
-    // back to saved values
     setName(userData?.name || '');
     setAllergies(userData?.allergies || []);
+    setPhotoURL(userData?.photoURL || null);
     const saved = AVATAR_COLORS.find(c => c.hex === userData?.avatarColor);
     setAvatarColor(saved || AVATAR_COLORS[0]);
     setNewAllergy('');
@@ -207,15 +239,51 @@ export default function ProfileScreen() {
 
           {/* Avatar */}
           <View className="items-center mb-8">
-            <View
-              className="w-24 h-24 rounded-full justify-center items-center mb-4 shadow-md"
-              style={{ backgroundColor: avatarColor.hex }}
+            <TouchableOpacity
+              onPress={editing ? handlePickPhoto : undefined}
+              activeOpacity={editing ? 0.7 : 1}
+              className="relative"
             >
-              <Text className="text-white text-4xl font-black">
-                {firstName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            {editing && (
+              {/* Photo or fallback circle */}
+              {photoURL ? (
+                <Image
+                  source={{ uri: photoURL }}
+                  className="w-24 h-24 rounded-full mb-4"
+                  style={{ width: 96, height: 96, borderRadius: 48 }}
+                />
+              ) : (
+                <View
+                  className="w-24 h-24 rounded-full justify-center items-center mb-4 shadow-md"
+                  style={{ backgroundColor: avatarColor.hex }}
+                >
+                  <Text className="text-white text-4xl font-black">
+                    {firstName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+
+              {/* Camera overlay when editing */}
+              {editing && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    bottom: 16,
+                    right: 0,
+                    backgroundColor: 'rgba(0,0,0,0.55)',
+                    borderRadius: 12,
+                    padding: 5,
+                  }}
+                >
+                  {photoUploading
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <Text style={{ fontSize: 14 }}>📷</Text>
+                  }
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Color picker — only if no photo set */}
+            {editing && !photoURL && (
               <View className="flex-row gap-3 mt-2">
                 {AVATAR_COLORS.map((color) => (
                   <TouchableOpacity
@@ -230,6 +298,16 @@ export default function ProfileScreen() {
                   />
                 ))}
               </View>
+            )}
+
+            {/* Remove photo button */}
+            {editing && photoURL && (
+              <TouchableOpacity
+                onPress={() => setPhotoURL(null)}
+                className="mt-2"
+              >
+                <Text className="text-gray-400 text-sm font-medium">Remove photo</Text>
+              </TouchableOpacity>
             )}
           </View>
 
@@ -260,7 +338,6 @@ export default function ProfileScreen() {
           <View className="bg-white rounded-2xl p-5 shadow-sm mb-8">
             <Text className="text-xs font-bold text-gray-400 uppercase mb-3">Allergies</Text>
 
-            {/* Allergy tags */}
             <View className="flex-row flex-wrap gap-2 mb-3">
               {allergies.length === 0 && (
                 <Text className="text-gray-400">None</Text>
@@ -277,7 +354,6 @@ export default function ProfileScreen() {
               ))}
             </View>
 
-            {/* Search input + suggestions */}
             {editing && (
               <View>
                 <TextInput
@@ -363,12 +439,12 @@ export default function ProfileScreen() {
           )}
 
           {/* Logout */}
-            <TouchableOpacity
+          <TouchableOpacity
             onPress={handleLogout}
             className="bg-white border border-rose-200 py-3 rounded-xl items-center mb-8"
-            >
+          >
             <Text className="text-rose-500 font-bold">Log Out</Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
 
         </ScrollView>
         <TabBar />

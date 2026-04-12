@@ -24,7 +24,6 @@
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png",
-      // TEST
       "bundler": "metro"
     },
     "plugins": [
@@ -39,6 +38,12 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Used to set your profile picture."
         }
       ]
     ],
