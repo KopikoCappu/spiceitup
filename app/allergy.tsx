@@ -36,6 +36,14 @@ export default function AllergySetup() {
                 ...doc.data() as Omit<Ingredient, 'id'>,
             }));
             setIngredients(list);
+            
+            // start with all categories collapsed
+            const categories = [...new Set(list.map(item => item.category))];
+            const collapsedState: Record<string, boolean> = {};
+            categories.forEach(cat => {
+                collapsedState[cat] = true;
+            });
+            setCollapsed(collapsedState);
         };
         fetchIngredients();
     }, []);

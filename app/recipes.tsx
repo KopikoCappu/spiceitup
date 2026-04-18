@@ -1,5 +1,5 @@
 import TabBar from '@/components/TabBar';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import RecipeFlipCard, { Recipe, RecipeFlipCardHandle } from '../components/RecipeCard';
-import { db } from '../firebaseConfig';
+import { auth, db } from '../firebaseConfig';
 import { seedRecipes } from '../seedRecipes';
 
 export default function RecipeScreen() {
@@ -18,91 +18,159 @@ export default function RecipeScreen() {
   const [index, setIndex] = useState(0);
 
   const cardRef = useRef<RecipeFlipCardHandle>(null);
-
-  // ref to the ScrollView so we can scroll back to top when card advances
   const scrollRef = useRef<ScrollView>(null);
 
+  // Function to filter and rank recipes based on user preferences
+  // Lauren's algorithm for filtering and ranking recipes
+  const filterAndRankRecipes = (allRecipes: Recipe[], userData: any) => {
+    const { allergies = [], liked = [], disliked = [], likedToday = [] } = userData;
+
+    // create empty array
+    const recipeRankings = Array(5).fill(null).map(() => ({ recipe: null as Recipe | null, rating: 0.0 }));
+
+    // For now, just take the first 5 filtered recipes
+    // You can add more sophisticated ranking based on preferences, difficulty, etc.
+    for (const recipe of allRecipes) {
+      let ranking = 0.0
+      let hasAllergen = false
+      let numIngredients = recipe?.ingredients?.length || 0
+      for (const ingredient of recipe?.ingredients || []) {
+        // Check ingredientId against allergies (assuming allergies contains ingredient IDs)
+        if (allergies.includes(ingredient.ingredientId)) {
+          hasAllergen = true
+          break
+        }
+        else if (likedToday.includes(ingredient.ingredientId)) {
+          ranking += (10 / numIngredients)
+        }
+        else if (liked.includes(ingredient.ingredientId)) {
+          ranking += (5 / numIngredients)
+        }
+        else if (disliked.includes(ingredient.ingredientId)) {
+          ranking -= (10 / numIngredients)
+        }
+      }
+      
+      if (hasAllergen) {
+        ranking = -10
+      }
+
+      for (let i = 4; i >= 0; i--) {
+        if (ranking >= recipeRankings[i].rating) {
+          if (i < 4) {
+            recipeRankings[i+1] = {recipe: recipeRankings[i].recipe, rating: recipeRankings[i].rating}
+          }
+          recipeRankings[i] = {recipe: recipe, rating: ranking}
+        }
+        else {
+          break
+        }
+      }
+
+    }
+    // return recipes
+    return recipeRankings.map(ranking => ranking.recipe).filter(recipe => recipe !== null) as Recipe[];
+  };
+
+  // seed recipes and then get all from database
   useEffect(() => {
     const setup = async () => {
       await seedRecipes();
-      const snapshot = await getDocs(collection(db, 'recipes'));
-      const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Recipe[];
-      for (let i = items.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [items[i], items[j]] = [items[j], items[i]];
+      
+      // Get all recipes
+      const recipesSnapshot = await getDocs(collection(db, 'recipes'));
+      const allRecipes = recipesSnapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Recipe[];
+      
+      // Get user data
+      const uid = auth.currentUser?.uid;
+      let userData: { allergies: string[]; likedToday: string[]; liked: string[]; disliked: string[] } = { allergies: [], likedToday: [], liked: [], disliked: [] };
+      if (uid) {
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (userDoc.exists()) {
+          const docData = userDoc.data();
+          userData = {
+            allergies: docData.allergies || [],
+            likedToday: docData.likedToday || [],
+            liked: docData.liked || [],
+            disliked: docData.disliked || []
+          };
+        }
       }
-      setRecipes(items);
+      
+      // Filter and rank recipes
+      const filteredRecipes = filterAndRankRecipes(allRecipes, userData);
+      
+      setRecipes(filteredRecipes);
       setLoading(false);
     };
     setup();
   }, []);
 
-  const handleChoice = (liked: boolean) => {
-    // flip card back to front face
-    cardRef.current?.reset();
+  const handleChoice = (next: boolean) => {
+    cardRef.current?.reset(); // flip to front when first shown
 
     setTimeout(() => {
-      // scroll back to top so next card header is visible
+      // scroll back to top so the card header is visible
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-      setIndex(prev => prev + 1);
+      setIndex(prev => {
+        if (next) {
+          return Math.min(prev + 1, recipes.length);
+        }
+        if (prev === 0) {
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 400);
   };
 
+  // while loading recipes display spinning circle
   if (loading) {
     return (
       <View className="flex-1 justify-center bg-rose-50">
-        <ActivityIndicator size="large" color="#EF4444" />
+        <ActivityIndicator size="large" color="#EF4444" /> 
       </View>
     );
   }
 
   return (
-    // flex-1 + bg on outer View keeps TabBar pinned at bottom always
     <View className="flex-1 bg-rose-50">
 
-      {/* ScrollView fills the space above TabBar.
-          When the flipped card pushes content down, the user can
-          scroll to reach the buttons. contentContainerStyle grows
-          to fit all content rather than clipping it. */}
+      {/* scroll to reach buttons, prevent anything from being cutt off */}
       <ScrollView
         ref={scrollRef}
         className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 64, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
-        // nestedScrollEnabled lets the card's inner ScrollView
-        // (directions list) scroll independently from this outer one
         nestedScrollEnabled={true}
       >
-        {/* ── HEADER ── same style as HomeScreen */}
+        {/* header */}
         <View className="mb-8">
           <Text className="text-2xl font-extrabold text-gray-800">Recipes 🍽️</Text>
           <Text className="text-sm text-gray-500 mt-1">Tap a card to see directions</Text>
         </View>
 
-        {/* ── CARD + BUTTONS ── grouped in one block so buttons
-            always sit directly below the card, whether it's
-            the short front face or the taller directions back face */}
+        {/* group cards and buttons so they move together */}
         <View className="items-center w-4/5" style={{ alignSelf: 'center' }}>
+        {/* check button increments index */}
           {index < recipes.length ? (
             <>
               <RecipeFlipCard ref={cardRef} recipe={recipes[index]} />
 
-              {/* Buttons sit here, directly under the card.
-                  marginTop gives a fixed gap between card bottom and buttons.
-                  They scroll with the card naturally — no absolute positioning. */}
+              {/* buttons */}
               <View className="flex-row gap-8 mt-8 mb-4">
                 <TouchableOpacity
                   onPress={() => handleChoice(false)}
                   className="w-20 h-20 rounded-full bg-white shadow-lg justify-center items-center border border-red-100 active:scale-95"
                 >
-                  <Text className="text-red-500 text-3xl font-bold">✕</Text>
+                  <Text className="text-black text-3xl">-</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => handleChoice(true)}
                   className="w-20 h-20 rounded-full bg-white shadow-lg justify-center items-center border border-teal-100 active:scale-95"
                 >
-                  <Text className="text-teal-500 text-3xl font-bold">✔</Text>
+                  <Text className="text-black text-3xl">R</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -119,8 +187,6 @@ export default function RecipeScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* TabBar stays pinned outside the ScrollView so it never scrolls away */}
       <TabBar />
     </View>
   );

@@ -157,14 +157,12 @@ const RecipeCard = forwardRef<RecipeFlipCardHandle, RecipeFlipCardProps>(
             </View>
           </View>
 
-          {/* ── INGREDIENT PILLS ──
-              slice(0, 4) = first 4 shown. change 4 to show more/fewer.
-              To show quantity too: replace {ing.name} with {ing.name} · {ing.quantity} */}
+          {/* ingredients in recipe */}
           <View style={{
             flexDirection: 'row', flexWrap: 'wrap',
             justifyContent: 'center', gap: 6, marginBottom: 24,
           }}>
-            {recipe.ingredients.slice(0, 4).map((ing, i) => (
+            {recipe.ingredients.map((ing, i) => (
               <View key={i} style={{
                 backgroundColor: '#fef2f2', paddingHorizontal: 10,
                 paddingVertical: 4, borderRadius: 20,
@@ -175,16 +173,6 @@ const RecipeCard = forwardRef<RecipeFlipCardHandle, RecipeFlipCardProps>(
                 </Text>
               </View>
             ))}
-            {recipe.ingredients.length > 4 && (
-              <View style={{
-                backgroundColor: '#f9fafb', paddingHorizontal: 10,
-                paddingVertical: 4, borderRadius: 20,
-              }}>
-                <Text style={{ fontSize: 11, color: '#9ca3af' }}>
-                  +{recipe.ingredients.length - 4} more
-                </Text>
-              </View>
-            )}
           </View>
 
           {/* ── TAP HINT — delete this block to remove it ── */}
