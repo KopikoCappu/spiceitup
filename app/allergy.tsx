@@ -9,6 +9,7 @@ import {
     View
 } from 'react-native';
 import { auth, db } from '../firebaseConfig';
+import { seedIngredients } from '../seedData';
 
 type Ingredient = {
     id: string;
@@ -28,6 +29,7 @@ export default function AllergySetup() {
 
     useEffect(() => {
         const fetchIngredients = async () => {
+            await seedIngredients();
             const snapshot = await getDocs(collection(db, 'ingredients'));
             const list = snapshot.docs.map(doc => ({
                 id: doc.id,

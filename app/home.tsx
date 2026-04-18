@@ -6,6 +6,8 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../AuthContext';
 import { db } from '../firebaseConfig';
 import { seedIngredients } from '../seedData';
+// import { HiXMark } from "react-icons/hi2";
+// import { IoCheckmark } from "react-icons/io5";
 
 
 interface Ingredient {
@@ -150,7 +152,7 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* Manual Action Buttons */}
+      {/* check and x buttons */}
       <View className="flex-row gap-8 mt-10">
         <TouchableOpacity 
           onPress={() => handleChoice(false)}

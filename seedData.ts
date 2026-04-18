@@ -1,4 +1,4 @@
-import { addDoc, collection, getDocs, limit, query } from "firebase/firestore";
+import { collection, doc, getDocs, limit, query, setDoc } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
 const ingredients = [
@@ -50,18 +50,18 @@ const ingredients = [
 { name: "Broccoli", image: "🥦", category: "Vegetable" },
 { name: "Brussel Sprouts", image: "🥬", category: "Vegetable" },
 { name: "Asparagus", image: "🥦", category: "Vegetable" },
-{ name: "Green Onions", image: "🟢🧅", category: "Vegetable" },
-{ name: "Onions", image: "🧅", category: "Vegetable" },
+{ name: "Green Onion", image: "🟢🧅", category: "Vegetable" },
+{ name: "Onion", image: "🧅", category: "Vegetable" },
 { name: "Shallots", image: "🧅", category: "Vegetable" },
 { name: "Garlic", image: "🧄", category: "Vegetable" },
-{ name: "Carrots", image: "🥕", category: "Vegetable" },
+{ name: "Carrot", image: "🥕", category: "Vegetable" },
 { name: "Celery", image: "🥬", category: "Vegetable" },
 { name: "Cabbage", image: "🥬", category: "Vegetable" },
 { name: "Corn", image: "🌽", category: "Vegetable" },
 { name: "Cucumber", image: "🥒", category: "Vegetable" },
 { name: "Potato", image: "🥔", category: "Vegetable" },
 { name: "Sweet Potato", image: "🍠", category: "Vegetable" },
-{ name: "Uncooked Pasta Noodles", image: "🍝", category: "Carb" },
+{ name: "Pasta Noodles", image: "🍝", category: "Carb" },
 { name: "Rice", image: "🍚", category: "Carb" },
 { name: "Vinegar", image: "🍶", category: "Condiment" },
 { name: "Pickle", image: "🥒", category: "Vegetable" },
@@ -69,7 +69,7 @@ const ingredients = [
 { name: "Ketchup", image: "🥫", category: "Condiment" },
 { name: "Mayonaise", image: "⚪", category: "Condiment" },
 { name: "Mustard", image: "🟡", category: "Condiment" },
-{ name: "All Purpose Flour", image: "🌾", category: "Baking" },
+{ name: "Flour", image: "🌾", category: "Baking" },
 { name: "Sugar", image: "🍚", category: "Baking" },
 { name: "Brown Sugar", image: "🟫", category: "Baking" },
 { name: "Light Brown Sugar", image: "🟫", category: "Baking" },
@@ -84,7 +84,7 @@ const ingredients = [
 { name: "Cocoa Powder", image: "🍫", category: "Baking" },
 { name: "Bread", image: "🍞", category: "Carb" },
 { name: "Tomatoes", image: "🍅", category: "Vegetable" },
-{ name: "Bell Peppers", image: "🫑", category: "Vegetable" },
+{ name: "Bell Pepper", image: "🫑", category: "Vegetable" },
 { name: "Strawberry", image: "🍓", category: "Fruit" },
 { name: "Blackberry", image: "🍇🖤", category: "Fruit" },
 { name: "Blueberry", image: "🫐", category: "Fruit" },
@@ -101,7 +101,18 @@ const ingredients = [
 { name: "Raisin", image: "🍇", category: "Fruit" },
 { name: "Lemon", image: "🍋", category: "Fruit" },
 { name: "Lime", image: "🍋‍🟩", category: "Fruit" },
-{ name: "Kiwi", image: "🥝", category: "Fruit" }
+{ name: "Kiwi", image: "🥝", category: "Fruit" },
+{ name: "Avocado", image: "🥑", category: "Vegetable"},
+{ name: "Olive Oil", image: "🫒", category: "Fat" },
+{name: "Sesame Oil", image: "🛢️", category: "Fat" },
+{name: "Soy Sauce", image: "🥫", category: "Condiment" },
+{ name: "Honey", image: "🍯", category: "Condiment" },
+{name: "Basil", image: "🌿", category: "Herb" },
+{ name: "Oregano", image: "🌿", category: "Herb" },
+{ name: "Rosemary", image: "🌿", category: "Herb" },
+{ name: "Parsley", image: "🌿", category: "Herb" },
+{name: "Salt", image: "🧂", category: "Condiment" },
+{name: "Pepper", image: "🧂", category: "Condiment" }
 ];
 
 export const seedIngredients = async () => {
@@ -115,7 +126,7 @@ export const seedIngredients = async () => {
   }
 
   for (const item of ingredients) {
-    await addDoc(colRef, item);
+    await setDoc(doc(colRef, item.name), item);
   }
   console.log("Database seeded successfully! 🎉");
 };
