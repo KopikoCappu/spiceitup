@@ -1,8 +1,10 @@
 import SwipeCard from '@/components/SwipeCard';
+import { Feather } from '@expo/vector-icons';
 import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../AuthContext';
+import TabBar from '../components/TabBar';
 import { db } from '../firebaseConfig';
 import { seedIngredients } from '../seedData';
 
@@ -125,13 +127,19 @@ export default function HomeScreen() {
   const firstName = (userData?.name || '').split(' ')[0] || 'Chef';
 
   return (
-    <View className="flex-1 bg-rose-50 px-6 pt-16 items-center">
+    <View className="flex-1 bg-rose-50">
+      {/* Header */}
+      <View className="bg-red-500 pt-20 pb-6 items-center">
+        <Text className="text-white text-4xl font-extrabold">Spice It Up</Text>
+      </View>
+
+      <View className="flex-1 px-6 pt-6 items-center">
       <View className="self-start mb-8">
-        <Text className="text-2xl font-extrabold text-gray-800">Hey, {firstName}!</Text>
+        <Text className="text-2xl font-medium text-gray-800">Hey, {firstName}!👋</Text>
         <Text className="text-sm text-gray-500 mt-1">What's going in the pot today?</Text>
       </View>
 
-      <View className="w-full h-3/5 items-center justify-center">
+      <View className="w-4/5 items-center justify-center mt-6" style={{ alignSelf: 'center' }}>
         {itemIndex < ingredientGroups[groupIndex].length ? (
           <SwipeCard 
             ingredient={ingredientGroups[groupIndex][itemIndex]} 
@@ -139,7 +147,7 @@ export default function HomeScreen() {
           />
         ) : groupIndex == (ingredientGroups.length-1) ? (
           <View className="items-center">
-            <Text className="text-lg font-bold text-gray-700">All caught up!</Text>
+            <Text className="text-lg font-bold text-gray-700">All caught up! 🥗</Text>
             <TouchableOpacity 
               onPress={() => {
                 setItemIndex(0);
@@ -166,22 +174,29 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* Manual Action Buttons */}
+      {/* check and x buttons */}
       <View className="flex-row gap-8 mt-10">
         <TouchableOpacity 
           onPress={() => handleChoice(false)}
           className="w-20 h-20 rounded-full bg-white shadow-lg justify-center items-center border border-red-100 active:scale-95"
         >
-          <Text className="text-red-500 text-3xl font-bold">✕</Text>
+          <Text className="text-red-500 text-3xl font-bold">
+            <Feather name="x" size={28} color="#ef4444" />
+          </Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           onPress={() => handleChoice(true)}
           className="w-20 h-20 rounded-full bg-white shadow-lg justify-center items-center border border-teal-100 active:scale-95"
         >
-          <Text className="text-teal-500 text-3xl font-bold">✔</Text>
+          <Text className="text-teal-500 text-3xl font-bold">
+            <Feather name="check" size={28} color="#22c55e" />
+          </Text>
         </TouchableOpacity>
       </View>
+      {/* navigation bar between screens */}
+      </View>
+      <TabBar /> 
     </View>
   );
 }
