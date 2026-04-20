@@ -33,8 +33,6 @@ type UserData = {
   isAdmin?: boolean;
 }
 
-
-
 export default function ProfileScreen() {
   const { user } = useAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -259,25 +257,6 @@ const handlePickPhoto = async () => {
                   <Text className="text-white text-4xl font-black">
                     {firstName.charAt(0).toUpperCase()}
                   </Text>
-                </View>
-              )}
-
-              {/* Camera overlay when editing */}
-              {editing && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    bottom: 16,
-                    right: 0,
-                    backgroundColor: 'rgba(0,0,0,0.55)',
-                    borderRadius: 12,
-                    padding: 5,
-                  }}
-                >
-                  {photoUploading
-                    ? <ActivityIndicator size="small" color="#fff" />
-                    : <Text style={{ fontSize: 14 }}>📷</Text>
-                  }
                 </View>
               )}
             </TouchableOpacity>

@@ -1,6 +1,7 @@
 import { onAuthStateChanged, User } from 'firebase/auth';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { auth } from './firebaseConfig';
+import { recipeStore } from './recipeStore';
 
 // 1. Define exactly what the "value" of our Context looks like
 interface AuthContextType {
@@ -22,12 +23,23 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const prevUserRef = useRef<User | null>(null);
+  const isFirstLoadRef = useRef(true);
 
   useEffect(() => {
     // onAuthStateChanged returns an Unsubscribe function
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      const prevUser = prevUserRef.current;
       setUser(firebaseUser);
       setLoading(false);
+
+      // Clear recipe on login or logout, but not on first load
+      if (!isFirstLoadRef.current && ((prevUser === null && firebaseUser !== null) || (prevUser !== null && firebaseUser === null))) {
+        recipeStore.set(null);
+      }
+
+      prevUserRef.current = firebaseUser;
+      isFirstLoadRef.current = false;
     });
 
     return unsubscribe;
